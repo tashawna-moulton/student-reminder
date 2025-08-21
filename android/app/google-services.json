@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "974832763756",
+    "project_id": "generic-app-169ba",
+    "storage_bucket": "generic-app-169ba.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:974832763756:android:fbe095c579c0e566d1a949",
+        "android_client_info": {
+          "package_name": "com.example.students_reminder"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkaaUKBxtSVOKsGGXCiNSw4c5OAi8YS-I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
