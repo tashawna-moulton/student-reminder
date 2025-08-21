@@ -18,7 +18,7 @@ class StudentsReminderApp extends StatelessWidget {
       theme: buildTheme(),
       debugShowCheckedModeBanner: false,
       onGenerateRoute: AppRoutes.onGenerateRoute,
-      initialRoute: AppRoutes.main,
+      initialRoute: AppRoutes.register,
     );
   }
 }
