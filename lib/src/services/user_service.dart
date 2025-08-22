@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
 
 class UserService {
   UserService._();
@@ -18,6 +19,7 @@ class UserService {
     String course,
   ) {
     //  course:  "web"  ||  "mobile"
+    debugPrint('***>> doc value: ${_db.collection('users').snapshots()}');
     return _db
         .collection('users')
         .where('courseGroup', isEqualTo: course)

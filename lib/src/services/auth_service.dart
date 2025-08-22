@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:students_reminder/src/services/session_manager.dart';
 
 class AuthService {
   AuthService._();
@@ -33,16 +34,25 @@ class AuthService {
       'bio': null,
       'createdAt': FieldValue.serverTimestamp(),
     });
+    await SessionManager.onLoginSuccess();
     return cred;
   }
 
   //Login CODE
-  Future<UserCredential> login(String email, String password) {
-    return _auth.signInWithEmailAndPassword(email: email, password: password);
+  Future<UserCredential> login(String email, String password) async {
+    final cred = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    await SessionManager.onLoginSuccess();
+    return cred;
   }
 
   //Logout CODE
-  Future<void> logout() => _auth.signOut();
+  Future<void> logout() async {
+    await _auth.signOut();
+    await SessionManager.clear();
+  }
 
   // Password Reset CODE
   Future<void> sendPasswordReset(String email) =>
