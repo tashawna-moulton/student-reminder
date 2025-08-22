@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:students_reminder/src/core/app_theme.dart';
 import 'package:students_reminder/src/core/bootstrap.dart';
+import 'package:students_reminder/src/features/splash/splash_gate.dart';
 import 'package:students_reminder/src/shared/routes.dart';
 
 void main() async {
@@ -18,7 +19,8 @@ class StudentsReminderApp extends StatelessWidget {
       theme: buildTheme(),
       debugShowCheckedModeBanner: false,
       onGenerateRoute: AppRoutes.onGenerateRoute,
-      initialRoute: AppRoutes.register,
+      // initialRoute: AppRoutes.register,
+      home: SplashGate(),
     );
   }
 }

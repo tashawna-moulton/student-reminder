@@ -27,7 +27,7 @@ class AppRoutes {
       case main:
         return MaterialPageRoute(builder: (_) => const MainLayoutPage());
       default:
-        return MaterialPageRoute(builder: (_) => const MainLayoutPage());
+        return MaterialPageRoute(builder: (_) => const LoginPage());
     }
   }
 }
