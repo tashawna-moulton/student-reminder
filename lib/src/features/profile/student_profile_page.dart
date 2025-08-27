@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:students_reminder/src/services/note_service.dart';
 import 'package:students_reminder/src/services/user_service.dart';
 
 class StudentProfilePage extends StatelessWidget {
@@ -47,7 +48,40 @@ class StudentProfilePage extends StatelessWidget {
                   ),
                   child: Text(bio),
                 ),
+
               // TODO: Add Notes section
+              Padding(
+                padding: EdgeInsetsGeometry.all(16),
+                child: Text(
+                  'Public Notes',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: NotesService.instance.watchPublicNotes(uid),
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    }
+                    final docs = snap.data?.docs ?? [];
+                    // if (docs.isEmpty) {
+                    //   return Center(child: Text('No public notes'));
+                    // }
+                    return ListView.separated(
+                      itemCount: docs.length,
+                      separatorBuilder: (_, _) => Divider(height: 2),
+                      itemBuilder: (context, i) {
+                        final data = docs[i].data();
+                        return ListTile(
+                          title: Text(data['title'] ?? ''),
+                          subtitle: Text(data['body'] ?? '', maxLines: 3, overflow: TextOverflow.ellipsis,),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
             ],
           );
         },

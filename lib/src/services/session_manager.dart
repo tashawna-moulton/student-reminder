@@ -2,7 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SessionManager {
   static const _key = 'loginState';
-  static const maxAge = Duration(minutes: 5);
+  static const maxAge = Duration(minutes: 35);
 
   //Mark that the user has  logged in
   static Future<void> onLoginSuccess() async {
