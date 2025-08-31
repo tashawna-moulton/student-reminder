@@ -56,4 +56,27 @@ class UserService {
     await _db.collection('users').doc(uid).update({'photoUrl': url});
     return url;
   }
+  // Add this method to your UserService class
+
+Future<void> uploadCoverPhoto({required String uid, required File file}) async {
+  try {
+    // Upload to Firebase Storage
+    final ref = FirebaseStorage.instance
+        .ref()
+        .child('covers')
+        .child('$uid.jpg');
+    
+    await ref.putFile(file);
+    final downloadUrl = await ref.getDownloadURL();
+    
+    // Update user document with cover URL
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .update({'coverUrl': downloadUrl});
+        
+  } catch (e) {
+    throw Exception('Failed to upload cover photo: $e');
+  }
+}
 }
