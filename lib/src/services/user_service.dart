@@ -56,4 +56,17 @@ class UserService {
     await _db.collection('users').doc(uid).update({'photoUrl': url});
     return url;
   }
+
+  Future<String?> uploadProfileCover({
+    required String uid,
+    required File file,
+  }) async {
+    final ref = _storage.ref().child(
+      'avatars/$uid/${DateTime.now().millisecondsSinceEpoch}.jpg',
+    );
+    await ref.putFile(file);
+    final url = await ref.getDownloadURL();
+    await _db.collection('users').doc(uid).update({'coverUrl': url});
+    return url;
+  }
 }
