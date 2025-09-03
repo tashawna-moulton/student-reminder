@@ -4,6 +4,7 @@ import 'package:students_reminder/src/features/auth/login_page.dart';
 import 'package:students_reminder/src/features/home/home_page.dart';
 import 'package:students_reminder/src/features/notes/my_notes_page.dart';
 import 'package:students_reminder/src/features/profile/profile_page.dart';
+import 'package:students_reminder/src/features/attendance/attendance_page.dart';
 import 'package:students_reminder/src/services/auth_service.dart';
 
 class MainLayoutPage extends StatefulWidget {
@@ -16,7 +17,7 @@ class MainLayoutPage extends StatefulWidget {
 class _MainLayoutPageState extends State<MainLayoutPage> {
   int _index = 0;
 
-  final _pages = const [HomePage(), MyNotesPage(), ProfilePage()];
+  final _pages = const [HomePage(), MyNotesPage(), ProfilePage(), AttendancePage()];
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
@@ -34,9 +35,8 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
               destinations: const [
                 NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
                 NavigationDestination(icon: Icon(Icons.event_note), label: 'Notes'),
-                NavigationDestination(
-                  icon: Icon(Icons.person_outline),
-                  label: 'Profile',
+                NavigationDestination(icon: Icon(Icons.person_outline), label: 'Profile'),
+                NavigationDestination(icon: Icon(Icons.assignment), label: 'Attendance',
                 ),
               ],
               onDestinationSelected: (i) => setState(() => _index = i),
