@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:students_reminder/src/features/auth/login_page.dart';
 import 'package:students_reminder/src/features/auth/register_page.dart';
 import 'package:students_reminder/src/features/profile/student_profile_page.dart';
+import 'package:students_reminder/src/features/attendance/attendance_page.dart';
 import 'package:students_reminder/src/shared/main_layout.dart';
 
 class AppRoutes {
   static const login = '/login';
   static const register = '/register';
   static const main = '/main';
+  static const attendance = '/attendance'; // Add this
 
   static Route<dynamic> onGenerateRoute(RouteSettings setting) {
       //Expecting /student/:uid
@@ -26,6 +28,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const RegisterPage());
       case main:
         return MaterialPageRoute(builder: (_) => const MainLayoutPage());
+      case attendance: // Add this case
+        return MaterialPageRoute(builder: (_) => const AttendancePage());
       default:
         return MaterialPageRoute(builder: (_) => const LoginPage());
     }

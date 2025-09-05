@@ -41,6 +41,14 @@ dependencies:
   cloud_firestore: ^6.0.0
   shared_preferences: ^2.5.3
 
+  image_picker: ^1.0.4
+  image_cropper: ^5.0.1
+  google_maps_flutter: ^2.5.0
+  geolocator: ^10.1.0
+  permission_handler: ^11.2.0
+  geocoding: ^2.1.1  
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
