@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:students_reminder/src/features/auth/login_page.dart';
 import 'package:students_reminder/src/services/auth_service.dart';
 import 'package:students_reminder/src/services/user_service.dart';
-import 'package:students_reminder/src/shared/routes.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -15,74 +14,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  Future<void> _onLogout(BuildContext context) async {
-    try {
-      //Confirm first
-      final safeToLogout = await showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text('Logout'),
-          content: Text('Are you sure you want to log out?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text('Yes'),
-            ),
-          ],
-        ),
-      );
-      if (safeToLogout != true) return;
-      await AuthService.instance.logout();
-      MaterialPageRoute(builder: (_) => const LoginPage());
-      // if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.login);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Login Failed: $e')));
-      }
-    }
-  }
-
-  //Update Profile
-  Future<void> _updateProfile() async {
-    setState(() => _busy = true);
-    try {
-      final uid = AuthService.instance.currentUser!.uid;
-      await UserService.instance.updateMyProfile(
-        uid,
-        phone: _phone.text.trim(),
-        bio: _bio.text.trim(),
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Profile updated!')));
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  //Upload/Select image
-  Future<void> _onPickPhoto() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
-    if (file == null) return;
-    final uid = AuthService.instance.currentUser!.uid;
-    await UserService.instance.uploadProfilePhoto(
-      uid: uid,
-      file: File(file.path),
-    );
-  }
-
+  // --- Controllers & state ---
   final _bio = TextEditingController();
   final _phone = TextEditingController();
   final _firstName = TextEditingController();
@@ -90,6 +22,87 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String? _photoUrl;
   bool _busy = false;
+
+  // --- Logout ---
+  Future<void> _onLogout(BuildContext context) async {
+    // Capture navigator & messenger BEFORE any await to avoid context-after-await lint
+    final navigator = Navigator.of(context);
+
+    try {
+      final bool? safeToLogout = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to log out?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Yes'),
+            ),
+          ],
+        ),
+      );
+
+      if (safeToLogout != true) return;
+
+      await AuthService.instance.logout();
+
+      if (!mounted) return;
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Logout failed: $e')),
+      );
+    }
+  }
+
+  // --- Update Profile ---
+  Future<void> _updateProfile() async {
+    setState(() => _busy = true);
+
+    // Capture messenger BEFORE await
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final uid = AuthService.instance.currentUser!.uid;
+      await UserService.instance.updateMyProfile(
+        uid,
+        phone: _phone.text.trim(),
+        bio: _bio.text.trim(),
+      );
+
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Profile updated!')),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  // --- Upload/Select image ---
+  Future<void> _onPickPhoto() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (file == null) return;
+
+    final uid = AuthService.instance.currentUser!.uid;
+    await UserService.instance.uploadProfilePhoto(
+      uid: uid,
+      file: File(file.path),
+    );
+  }
 
   @override
   void initState() {
@@ -113,65 +126,79 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('My Profile'),
+        title: const Text('My Profile'),
         actions: [
           IconButton(
             onPressed: () => _onLogout(context),
-            icon: Icon(Icons.logout),
+            icon: const Icon(Icons.logout),
           ),
         ],
       ),
       body: ListView(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         children: [
           CircleAvatar(
             radius: 30,
-            backgroundImage: _photoUrl != null
-                ? NetworkImage(_photoUrl!)
-                : null,
-            child: _photoUrl == null ? Icon(Icons.person, size: 30) : null,
+            backgroundImage: _photoUrl != null ? NetworkImage(_photoUrl!) : null,
+            child: _photoUrl == null ? const Icon(Icons.person, size: 30) : null,
           ),
           TextButton.icon(
-            icon: Icon(Icons.camera_alt),
+            icon: const Icon(Icons.camera_alt),
             onPressed: _onPickPhoto,
-            label: Text('Change Image'),
+            label: const Text('Change Image'),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Text('Name: ${_firstName.text} ${_lastName.text} (set on register)'),
-          Text('Name: ${user.email}'),
-          SizedBox(height: 12),
+          Text('Email: ${user.email}'), // ← fixed label
+          const SizedBox(height: 12),
+
           TextField(
             controller: _phone,
-            decoration: InputDecoration(labelText: 'Phone #'),
+            decoration: const InputDecoration(labelText: 'Phone #'),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
+
           TextField(
             controller: _bio,
-            decoration: InputDecoration(labelText: 'Bio'),
+            decoration: const InputDecoration(labelText: 'Bio'),
           ),
-          SizedBox(height: 14),
+          const SizedBox(height: 14),
+
           ElevatedButton(
             onPressed: _busy ? null : _updateProfile,
-            child: _busy ? CircularProgressIndicator() : Text('Save/Update'),
+            child: _busy
+                ? const SizedBox(
+                    width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Save/Update'),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
+
           OutlinedButton(
             onPressed: () async {
+              // Capture messenger BEFORE await to avoid context-after-await lint
+              final messenger = ScaffoldMessenger.of(context);
               await AuthService.instance.sendPasswordReset(user.email!);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Password reset email sent!')),
-                );
-              }
+              if (!mounted) return;
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Password reset email sent!')),
+              );
             },
-            child: Text('Send Password reset email'),
+            child: const Text('Send Password reset email'),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
+
           TextButton(
             onPressed: () async {
+              // optional quick logout (kept simple)
               await AuthService.instance.logout();
+              if (!mounted) return;
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+                (route) => false,
+              );
             },
-            child: Text('Logout'),
+            child: const Text('Logout'),
           ),
         ],
       ),
