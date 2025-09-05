@@ -30,7 +30,7 @@
         <!-- ✅ Google Maps API key via Gradle placeholder -->
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
-            android:value="${MAPS_API_KEY}" />
+            android:value="AIzaSyCOHMMG5JEkhaxpXVn0AnHat28kutn6ZQ0"/>
 
         <activity
             android:name=".MainActivity"

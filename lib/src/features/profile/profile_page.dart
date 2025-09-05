@@ -124,14 +124,8 @@ class _ProfilePageState extends State<ProfilePage> {
     return File(croppedImage.path);
   }
 
-  final _bio = TextEditingController();
-  final _phone = TextEditingController();
-  final _firstName = TextEditingController();
-  final _lastName = TextEditingController();
   final int maxtextLength = 100;
-  String? _photoUrl;
   String? _coverUrl;
-  bool _busy = false;
 
   @override
   void initState() {
