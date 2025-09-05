@@ -1,6 +1,6 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:students_reminder/src/features/auth/login_page.dart';
@@ -70,7 +70,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  //Upload/Select and crop profile image
+  //Upload/Select image
   Future<void> _onPickPhoto() async {
     final picker = ImagePicker();
     final file = await picker.pickImage(
@@ -78,89 +78,18 @@ class _ProfilePageState extends State<ProfilePage> {
       imageQuality: 85,
     );
     if (file == null) return;
-
-    // Crop the image to square
-    final croppedFile = await ImageCropper().cropImage(
-      sourcePath: file.path,
-      aspectRatio: CropAspectRatio(ratioX: 1, ratioY: 1), // Square crop
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Crop Profile Photo',
-          toolbarColor: Theme.of(context).primaryColor,
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.square,
-          lockAspectRatio: true,
-        ),
-        IOSUiSettings(
-          title: 'Crop Profile Photo',
-          aspectRatioLockEnabled: true,
-          resetAspectRatioEnabled: false,
-        ),
-      ],
-    );
-
-    if (croppedFile == null) return;
-
     final uid = AuthService.instance.currentUser!.uid;
-    setState(() => _busy = true);
-    try {
-      await UserService.instance.uploadProfilePhoto(
-        uid: uid,
-        file: File(croppedFile.path),
-      );
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  //Upload/Select and crop cover image
-  Future<void> _onPickCover() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
+    await UserService.instance.uploadProfilePhoto(
+      uid: uid,
+      file: File(file.path),
     );
-    if (file == null) return;
-
-    // Crop the image to 16:9 aspect ratio for cover
-    final croppedFile = await ImageCropper().cropImage(
-      sourcePath: file.path,
-      aspectRatio: CropAspectRatio(ratioX: 16, ratioY: 9),
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Crop Cover Photo',
-          toolbarColor: Theme.of(context).primaryColor,
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.ratio16x9,
-          lockAspectRatio: true,
-        ),
-        IOSUiSettings(
-          title: 'Crop Cover Photo',
-          aspectRatioLockEnabled: true,
-          resetAspectRatioEnabled: false,
-        ),
-      ],
-    );
-
-    if (croppedFile == null) return;
-
-    final uid = AuthService.instance.currentUser!.uid;
-    setState(() => _busy = true);
-    try {
-      await UserService.instance.uploadCoverPhoto(
-        uid: uid,
-        file: File(croppedFile.path),
-      );
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
   }
 
   final _bio = TextEditingController();
   final _phone = TextEditingController();
   final _firstName = TextEditingController();
   final _lastName = TextEditingController();
-
+  final int maxtextLength = 100;
   String? _photoUrl;
   String? _coverUrl;
   bool _busy = false;
@@ -220,211 +149,68 @@ class _ProfilePageState extends State<ProfilePage> {
     final user = AuthService.instance.currentUser!;
 
     return Scaffold(
-      body: NestedScrollView(
-        controller: _scrollController,
-        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-          return <Widget>[
-            SliverAppBar(
-              expandedHeight: 200.0,
-              floating: false,
-              pinned: true,
-              title: Text('My Profile'),
-              actions: [
-                IconButton(
-                  onPressed: () => _onLogout(context),
-                  icon: Icon(Icons.logout),
-                ),
-              ],
-              flexibleSpace: FlexibleSpaceBar(
-                background: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // Cover Image
-                    _coverUrl != null
-                        ? Image.network(
-                            _coverUrl!,
-                            fit: BoxFit.cover,
-                          )
-                        : Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Theme.of(context).primaryColor.withOpacity(0.8),
-                                  Theme.of(context).primaryColor.withOpacity(0.4),
-                                ],
-                              ),
-                            ),
-                          ),
-                    // Cover overlay with change button
-                    Positioned(
-                      bottom: 16,
-                      right: 16,
-                      child: FloatingActionButton.small(
-                        onPressed: _onPickCover,
-                        backgroundColor: Colors.black54,
-                        child: Icon(Icons.camera_alt, color: Colors.white),
-                      ),
-                    ),
-                    // Profile picture overlay
-                    Positioned(
-                      bottom: 16,
-                      left: 16,
-                      child: GestureDetector(
-                        onTap: _onPickPhoto,
-                        child: Stack(
-                          children: [
-                            CircleAvatar(
-                              radius: 40,
-                              backgroundColor: Colors.white,
-                              child: CircleAvatar(
-                                radius: 37,
-                                backgroundImage: _photoUrl != null
-                                    ? NetworkImage(_photoUrl!)
-                                    : null,
-                                child: _photoUrl == null 
-                                    ? Icon(Icons.person, size: 35) 
-                                    : null,
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).primaryColor,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  size: 16,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ];
-        },
-        body: ListView(
-          padding: EdgeInsets.all(16),
-          children: [
-            SizedBox(height: 12),
-            Text(
-              '${_firstName.text} ${_lastName.text}',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            Text(
-              user.email ?? '',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
-            ),
-            SizedBox(height: 24),
-            
-            // Phone field with character counter
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                TextField(
-                  controller: _phone,
-                  decoration: InputDecoration(
-                    labelText: 'Phone Number',
-                    border: OutlineInputBorder(),
-                    errorText: _phone.text.length > _phoneMaxLength 
-                        ? 'Phone number too long' 
-                        : null,
-                  ),
-                  keyboardType: TextInputType.phone,
-                  maxLength: _phoneMaxLength,
-                  buildCounter: (context, {required currentLength, required isFocused, maxLength}) {
-                    return _buildCharacterCounter(_phone.text, _phoneMaxLength);
-                  },
-                  onChanged: (value) {
-                    setState(() {});
-                  },
-                ),
-              ],
-            ),
-            
-            SizedBox(height: 16),
-            
-            // Bio field with character counter
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                TextField(
-                  controller: _bio,
-                  decoration: InputDecoration(
-                    labelText: 'Bio',
-                    border: OutlineInputBorder(),
-                    alignLabelWithHint: true,
-                    errorText: _bio.text.length > _bioMaxLength 
-                        ? 'Bio too long' 
-                        : null,
-                  ),
-                  maxLines: 4,
-                  maxLength: _bioMaxLength,
-                  buildCounter: (context, {required currentLength, required isFocused, maxLength}) {
-                    return _buildCharacterCounter(_bio.text, _bioMaxLength);
-                  },
-                  onChanged: (value) {
-                    setState(() {});
-                  },
-                ),
-              ],
-            ),
-            
-            SizedBox(height: 24),
-            
-            ElevatedButton(
-              onPressed: (_busy || 
-                         _bio.text.length > _bioMaxLength || 
-                         _phone.text.length > _phoneMaxLength) 
-                  ? null 
-                  : _updateProfile,
-              child: _busy 
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text('Save Profile'),
-            ),
-            
-            SizedBox(height: 16),
-            
-            OutlinedButton(
-              onPressed: () async {
-                await AuthService.instance.sendPasswordReset(user.email!);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Password reset email sent!')),
-                  );
-                }
-              },
-              child: Text('Send Password Reset Email'),
-            ),
-            
-            SizedBox(height: 12),
-            
-            TextButton(
-              onPressed: () => _onLogout(context),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
-              child: Text('Logout'),
-            ),
-          ],
-        ),
+      appBar: AppBar(
+        title: Text('My Profile'),
+        actions: [
+          IconButton(
+            onPressed: () => _onLogout(context),
+            icon: Icon(Icons.logout),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: EdgeInsets.all(16),
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundImage: _photoUrl != null
+                ? NetworkImage(_photoUrl!)
+                : null,
+            child: _photoUrl == null ? Icon(Icons.person, size: 30) : null,
+          ),
+          TextButton.icon(
+            icon: Icon(Icons.camera_alt),
+            onPressed: _onPickPhoto,
+            label: Text('Change Image'),
+          ),
+          SizedBox(height: 12),
+          Text('Name: ${_firstName.text} ${_lastName.text} (set on register)'),
+          Text('Name: ${user.email}'),
+          SizedBox(height: 12),
+          TextField(
+            controller: _phone,
+            decoration: InputDecoration(labelText: 'Phone #'),
+          ),
+          SizedBox(height: 12),
+          TextField(
+            controller: _bio,
+            decoration: InputDecoration(labelText: 'Bio'),
+          ),
+          SizedBox(height: 14),
+          ElevatedButton(
+            onPressed: _busy ? null : _updateProfile,
+            child: _busy ? CircularProgressIndicator() : Text('Save/Update'),
+          ),
+          SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: () async {
+              await AuthService.instance.sendPasswordReset(user.email!);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Password reset email sent!')),
+                );
+              }
+            },
+            child: Text('Send Password reset email'),
+          ),
+          SizedBox(height: 12),
+          TextButton(
+            onPressed: () async {
+              await AuthService.instance.logout();
+            },
+            child: Text('Logout'),
+          ),
+        ],
       ),
     );
   }
