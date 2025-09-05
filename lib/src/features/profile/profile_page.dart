@@ -1,6 +1,6 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:students_reminder/src/features/auth/login_page.dart';
 import 'package:students_reminder/src/services/auth_service.dart';
@@ -88,21 +88,50 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // --- Upload/Select image ---
-  Future<void> _onPickPhoto() async {
+
+  //Upload/Select image
+  Future<void> _onPickPhoto({bool isCover = false}) async {
     final picker = ImagePicker();
     final file = await picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
     );
     if (file == null) return;
+    File? files = File(file.path);
+    files = await _cropImage(file: files);
+    if (files == null) return;
 
     final uid = AuthService.instance.currentUser!.uid;
+    
+    if (isCover == true) {
+      await UserService.instance.uploadProfileCover(
+        uid: uid,
+        file: File(files.path),
+      );
+  }else {
     await UserService.instance.uploadProfilePhoto(
       uid: uid,
-      file: File(file.path),
+      file: File(files.path),
     );
   }
+  }
+
+  Future<File?> _cropImage({required File file}) async {
+    CroppedFile? croppedImage = await ImageCropper().cropImage(
+      sourcePath: file.path,
+    );
+    if (croppedImage == null) return null;
+    return File(croppedImage.path);
+  }
+
+  final _bio = TextEditingController();
+  final _phone = TextEditingController();
+  final _firstName = TextEditingController();
+  final _lastName = TextEditingController();
+  final int maxtextLength = 100;
+  String? _photoUrl;
+  String? _coverUrl;
+  bool _busy = false;
 
   @override
   void initState() {
@@ -115,7 +144,10 @@ class _ProfilePageState extends State<ProfilePage> {
         _lastName.text = (data['lastName'] ?? '') as String;
         _bio.text = (data['bio'] ?? '') as String;
         _phone.text = (data['phone'] ?? '') as String;
-        setState(() => _photoUrl = data['photoUrl'] as String?);
+        setState(() {
+          _photoUrl = data['photoUrl'] as String?;
+          _coverUrl = data['coverUrl'] as String?;
+        });
       }
     });
   }
@@ -125,80 +157,101 @@ class _ProfilePageState extends State<ProfilePage> {
     final user = AuthService.instance.currentUser!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Profile'),
-        actions: [
-          IconButton(
-            onPressed: () => _onLogout(context),
-            icon: const Icon(Icons.logout),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            backgroundColor: Colors.white,
+            expandedHeight: 220,
+            pinned: true,
+            floating: true,
+            flexibleSpace: FlexibleSpaceBar(
+              background: _coverUrl != null
+                  ? Image.network(_coverUrl!, fit: BoxFit.cover)
+                  : Container(color: Colors.grey),
+            ),
+            title: Text('My Profile'),
+            actions: [
+              IconButton(
+                onPressed: () => _onLogout(context),
+                icon: Icon(Icons.logout),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundImage: _photoUrl != null ? NetworkImage(_photoUrl!) : null,
-            child: _photoUrl == null ? const Icon(Icons.person, size: 30) : null,
-          ),
-          TextButton.icon(
-            icon: const Icon(Icons.camera_alt),
-            onPressed: _onPickPhoto,
-            label: const Text('Change Image'),
-          ),
-          const SizedBox(height: 12),
-          Text('Name: ${_firstName.text} ${_lastName.text} (set on register)'),
-          Text('Email: ${user.email}'), // ← fixed label
-          const SizedBox(height: 12),
-
-          TextField(
-            controller: _phone,
-            decoration: const InputDecoration(labelText: 'Phone #'),
-          ),
-          const SizedBox(height: 12),
-
-          TextField(
-            controller: _bio,
-            decoration: const InputDecoration(labelText: 'Bio'),
-          ),
-          const SizedBox(height: 14),
-
-          ElevatedButton(
-            onPressed: _busy ? null : _updateProfile,
-            child: _busy
-                ? const SizedBox(
-                    width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save/Update'),
-          ),
-          const SizedBox(height: 12),
-
-          OutlinedButton(
-            onPressed: () async {
-              // Capture messenger BEFORE await to avoid context-after-await lint
-              final messenger = ScaffoldMessenger.of(context);
-              await AuthService.instance.sendPasswordReset(user.email!);
-              if (!mounted) return;
-              messenger.showSnackBar(
-                const SnackBar(content: Text('Password reset email sent!')),
-              );
-            },
-            child: const Text('Send Password reset email'),
-          ),
-          const SizedBox(height: 12),
-
-          TextButton(
-            onPressed: () async {
-              // optional quick logout (kept simple)
-              await AuthService.instance.logout();
-              if (!mounted) return;
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginPage()),
-                (route) => false,
-              );
-            },
-            child: const Text('Logout'),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 80,
+                    backgroundImage: _photoUrl != null
+                        ? NetworkImage(_photoUrl!)
+                        : null,
+                    child: _photoUrl == null
+                        ? Icon(Icons.person, size: 30)
+                        : null,
+                  ),
+                  TextButton.icon(
+                    icon: Icon(Icons.camera_alt),
+                    onPressed: _onPickPhoto,
+                    label: Text('Change Image'),
+                  ),
+                  TextButton.icon(
+                    icon: Icon(Icons.photo_size_select_actual_sharp),
+                    onPressed: () => _onPickPhoto(isCover: true),
+                    label: Text('Change Cover'),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'Name: ${_firstName.text} ${_lastName.text} (set on register)',
+                  ),
+                  Text('Email: ${user.email}'),
+                  SizedBox(height: 12),
+                  TextField(
+                    controller: _phone,
+                    decoration: InputDecoration(labelText: 'Phone #'),
+                  ),
+                  SizedBox(height: 12),
+                  TextField(
+                    controller: _bio,
+                    maxLength: maxtextLength,
+                    decoration: InputDecoration(
+                      labelText: 'Bio',
+                      counter: Text('${_bio.text.length}/$maxtextLength'),
+                    ),
+                    onChanged: (text) {
+                      setState(() {});
+                    },
+                  ),
+                  SizedBox(height: 14),
+                  ElevatedButton(
+                    onPressed: _busy ? null : _updateProfile,
+                    child: _busy
+                        ? CircularProgressIndicator()
+                        : Text('Save/Update'),
+                  ),
+                  SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: () async {
+                      await AuthService.instance.sendPasswordReset(user.email!);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Password reset email sent!')),
+                        );
+                      }
+                    },
+                    child: Text('Send Password reset email'),
+                  ),
+                  SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () async {
+                      await AuthService.instance.logout();
+                    },
+                    child: Text('Logout'),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

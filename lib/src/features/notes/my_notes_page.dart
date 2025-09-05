@@ -1,9 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:students_reminder/src/features/notes/dialogs/note_editor_dialog.dart';
+import 'package:students_reminder/src/features/notes/dialogs/note_editor_bottom_sheet.dart';
 import 'package:students_reminder/src/services/auth_service.dart';
 import 'package:students_reminder/src/services/note_service.dart';
-
 class MyNotesPage extends StatelessWidget {
   const MyNotesPage({super.key});
 
@@ -12,39 +11,43 @@ class MyNotesPage extends StatelessWidget {
     final uid = AuthService.instance.currentUser!.uid;
 
     return Scaffold(
-      appBar: AppBar(title: Text('My Notes')),
+      appBar: AppBar(title: const Text('My Notes')),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          await showDialog(
-            context: context,
-            builder: (_) => NoteEditorDialog(uid: uid),
-          );
+          // --- New Bottom Sheet Editor ---
+          final note = await showNoteEditorBottomSheet(context);
+          if (note != null) {
+          }
+
         },
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: NotesService.instance.watchMyNotes(uid),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
           final docs = snap.data?.docs ?? [];
           if (docs.isEmpty) {
-            return Center(
+            return const Center(
               child: Text(
                 'No notes to show. Click the + button to add a note.',
               ),
             );
           }
+
           return ListView.separated(
             itemCount: docs.length,
-            separatorBuilder: (_, _) => Divider(height: 2),
+            separatorBuilder: (_, __) => const Divider(height: 2),
             itemBuilder: (context, i) {
-              final data = docs[i];
-              final visible = data['visibility'] ?? 'private';
-              final title = (data['title'] ?? '').toString();
-              final body = (data['body'] ?? '').toString();
+              final doc = docs[i];
+              final noteId = doc.id;
+              final visible = doc['visibility'] ?? 'private';
+              final title = (doc['title'] ?? '').toString();
+              final body = (doc['body'] ?? '').toString();
+
               return ListTile(
                 title: Text(title),
                 subtitle: Text(
@@ -53,12 +56,21 @@ class MyNotesPage extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 leading: Chip(label: Text(visible)),
-                onTap: () {},
+                onTap: () async {
+                  // --- New Bottom Sheet Editor for editing ---
+                  final note = await showNoteEditorBottomSheet(
+                    context,
+                    initial: Note(id: noteId, title: title, body: body),
+                  );
+                  if (note != null) {
+                  }
+
+                },
                 trailing: IconButton(
                   onPressed: () async {
-                    await NotesService.instance.deleteNote(uid, data['id']);
+                    await NotesService.instance.deleteNote(uid, noteId);
                   },
-                  icon: Icon(Icons.delete_outlined),
+                  icon: const Icon(Icons.delete_outlined),
                 ),
               );
             },
