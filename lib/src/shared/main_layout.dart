@@ -4,6 +4,7 @@ import 'package:students_reminder/src/features/auth/login_page.dart';
 import 'package:students_reminder/src/features/home/home_page.dart';
 import 'package:students_reminder/src/features/notes/my_notes_page.dart';
 import 'package:students_reminder/src/features/profile/profile_page.dart';
+import 'package:students_reminder/src/features/attendance/attendance_page.dart';
 import 'package:students_reminder/src/services/auth_service.dart';
 import 'package:students_reminder/src/features/attendance/attendance_page.dart';
 
