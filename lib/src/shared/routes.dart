@@ -3,16 +3,16 @@ import 'package:students_reminder/src/features/auth/login_page.dart';
 import 'package:students_reminder/src/features/auth/register_page.dart';
 import 'package:students_reminder/src/features/profile/student_profile_page.dart';
 import 'package:students_reminder/src/shared/main_layout.dart';
+import 'package:students_reminder/src/features/admin/admin_page.dart'; // 👈 import your admin page
 
 class AppRoutes {
   static const login = '/login';
   static const register = '/register';
   static const main = '/main';
+  static const admin = '/admin';
 
   static Route<dynamic> onGenerateRoute(RouteSettings setting) {
-      //Expecting /student/:uid
-      //              /student/12345
-      //              /student/
+    // Expecting /student/:uid
     final url = Uri.parse(setting.name ?? '');
     if (url.pathSegments.isNotEmpty && url.pathSegments[0] == 'student') {
       final uid = url.pathSegments.length > 1 ? url.pathSegments[1] : '';
@@ -26,6 +26,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const RegisterPage());
       case main:
         return MaterialPageRoute(builder: (_) => const MainLayoutPage());
+      case admin:
+        return MaterialPageRoute(builder: (_) => const AdminPage());
       default:
         return MaterialPageRoute(builder: (_) => const LoginPage());
     }

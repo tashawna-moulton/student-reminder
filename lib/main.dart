@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:students_reminder/src/core/app_theme.dart';
 import 'package:students_reminder/src/core/bootstrap.dart';
+import 'package:students_reminder/src/features/admin/admin_page.dart';
 import 'package:students_reminder/src/features/splash/splash_gate.dart';
 import 'package:students_reminder/src/shared/routes.dart';
 
