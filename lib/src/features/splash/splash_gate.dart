@@ -42,8 +42,10 @@ class SplashGate extends StatelessWidget {
                 }
                 if (snapshot.data == 'admin') {
                   return AdminPage();
-                }
+                } else {
+
                 return MainLayoutPage();
+                }
               },
             );
             // return LoginPage();
