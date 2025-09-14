@@ -70,6 +70,7 @@ class DefaultFirebaseOptions {
     projectId: 'studentreminderg2',
     storageBucket: 'studentreminderg2.firebasestorage.app',
     iosBundleId: 'com.example.studentsReminder',
+
   );
 
 }

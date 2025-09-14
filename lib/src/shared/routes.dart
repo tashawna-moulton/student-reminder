@@ -5,6 +5,7 @@ import 'package:students_reminder/src/features/profile/student_profile_page.dart
 import 'package:students_reminder/src/shared/main_layout.dart';
 import 'package:students_reminder/src/features/admin/admin_page.dart'; // 👈 import your admin page
 
+
 class AppRoutes {
   static const login = '/login';
   static const register = '/register';

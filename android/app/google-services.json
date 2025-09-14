@@ -7,9 +7,10 @@
   "client": [
     {
       "client_info": {
+
         "mobilesdk_app_id": "1:727140327360:android:090c8d1622fd864a813225",
         "android_client_info": {
-          "package_name": "com.example.students_reminder"
+          "package_name": "com.rayacademy.studentsreminder"
         }
       },
       "oauth_client": [],
