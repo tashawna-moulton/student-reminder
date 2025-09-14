@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:students_reminder/src/features/notes/dialogs/note_dialog_v2.dart';
 import 'package:students_reminder/src/features/notes/dialogs/note_editor_bottom_sheet.dart';
 import 'package:students_reminder/src/services/auth_service.dart';
 import 'package:students_reminder/src/services/note_service.dart';
+
 class MyNotesPage extends StatelessWidget {
   const MyNotesPage({super.key});
 
@@ -11,14 +13,25 @@ class MyNotesPage extends StatelessWidget {
     final uid = AuthService.instance.currentUser!.uid;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My Notes')),
+      appBar: AppBar(
+        title: const Text('My Notes'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => 
+              
+              NoteEditorDialog(uid: uid)
+              ,));
+            },
+            icon: Icon(Icons.search),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           // --- New Bottom Sheet Editor ---
           final note = await showNoteEditorBottomSheet(context);
-          if (note != null) {
-          }
-
+          if (note != null) {}
         },
         child: const Icon(Icons.add),
       ),
@@ -62,9 +75,7 @@ class MyNotesPage extends StatelessWidget {
                     context,
                     initial: Note(id: noteId, title: title, body: body),
                   );
-                  if (note != null) {
-                  }
-
+                  if (note != null) {}
                 },
                 trailing: IconButton(
                   onPressed: () async {

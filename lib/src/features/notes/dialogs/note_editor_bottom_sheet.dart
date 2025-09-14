@@ -78,6 +78,7 @@ class _NoteEditorSheetState extends State<_NoteEditorSheet> {
           title: _titleController.text.trim(),
           body: _bodyController.text.trim(),
           visibility: 'private',
+          tags: []
         );
 
         SnackbarHelper.showSuccess(context, 'Note created');
