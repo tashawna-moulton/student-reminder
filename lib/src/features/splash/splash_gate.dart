@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:students_reminder/src/features/admin/admin_page.dart';
 import 'package:students_reminder/src/features/auth/login_page.dart';
 import 'package:students_reminder/src/services/auth_service.dart';
 import 'package:students_reminder/src/services/session_manager.dart';
@@ -31,7 +32,20 @@ class SplashGate extends StatelessWidget {
             debugPrint(
               '*** currentUserInfo at startup: ${AuthService.instance.currentUser}',
             );
-            return MainLayoutPage();
+            return FutureBuilder(
+              future: AuthService.instance.getUserRole(),
+              builder: (context, snapshot) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (snapshot.data == 'admin') {
+                  return AdminPage();
+                }
+                return MainLayoutPage();
+              },
+            );
             // return LoginPage();
           },
         );

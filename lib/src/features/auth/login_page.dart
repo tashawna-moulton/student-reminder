@@ -22,9 +22,9 @@ class _LoginPageState extends State<LoginPage> {
       await navigateAfterLogin();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login Failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Login Failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -47,6 +47,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (role == 'admin') {
         Navigator.pushReplacementNamed(context, AppRoutes.admin);
+        return;
       } else {
         Navigator.pushReplacementNamed(context, AppRoutes.main);
       }
