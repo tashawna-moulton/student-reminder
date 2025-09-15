@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'package:students_reminder/src/features/attendance/attendance_history.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -455,7 +455,20 @@ class _AttendancePageState extends State<AttendancePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Attendance')),
+      appBar: AppBar(title: const Text('Attendance'),
+      actions: [
+      IconButton(
+        icon: const Icon(Icons.history),
+        tooltip: 'Attendance History',
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AttendanceHistory()),
+          );
+        },
+      ),
+      ]
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
