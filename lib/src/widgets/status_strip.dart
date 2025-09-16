@@ -25,7 +25,7 @@ class StatusStrip extends StatelessWidget {
     final color = _statusColor(status);
 
     // If withValues isn't available in your SDK, keep withOpacity
-    final bg = color.withOpacity(0.08);
+    final bg = color.withAlpha(8);
     // final bg = color.withValues(alpha: 0.08); // newer SDKs
 
     return Container(

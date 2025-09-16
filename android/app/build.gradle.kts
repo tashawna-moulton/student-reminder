@@ -4,18 +4,15 @@ plugins {
     id("com.google.gms.google-services")
     // END: FlutterFire Configuration
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
-    // ⚠️ Must match your Firebase Android app package
     namespace = "com.rayacademy.studentsreminder"
 
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
-    // ✅ Use Java 17 (recommended with current AGP)
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -25,24 +22,19 @@ android {
     }
 
     defaultConfig {
-        // ⚠️ Must match `namespace` and Firebase Android app id
         applicationId = "com.rayacademy.studentsreminder"
-
-        // ✅ Good for geolocator etc.
         minSdk = flutter.minSdkVersion
         targetSdk = 35
 
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // ✅ Provide Maps key via placeholder (preferred)
-        manifestPlaceholders["MAPS_API_KEY"] = "YOUR_ANDROID_MAPS_API_KEY"
-        // Replace the value above with your actual Android Maps API key
+        // ✅ Matches AndroidManifest.xml value="${MAPS_API_KEY}"
+        manifestPlaceholders["MAPS_API_KEY"] = "AIzaSyA1vk3DMgxvoeNfGN3kFxkJZ2fkBwMm8Dc"
     }
 
     buildTypes {
         release {
-            // TODO: replace with your real signing config for release builds
             signingConfig = signingConfigs.getByName("debug")
         }
     }

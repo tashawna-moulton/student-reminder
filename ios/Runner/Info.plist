@@ -62,5 +62,8 @@
 	    <string>fetch</string>
 	    <string>remote-notification</string>
 	</array>
+   <!-- ✅ Permission for (Google Map API) -->
+    <key>GMSApiKey</key>
+  <string>AIzaSyD0isLXBTFihTM-hEI9pCaxiAdL04Vo2Rg</string>
 </dict>
 </plist>

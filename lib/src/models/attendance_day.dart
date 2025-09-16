@@ -50,7 +50,7 @@ class AttendanceDay {
   }
 
   Map<String, dynamic> toMap() {
-    Map<String, dynamic>? _loc(double? lat, double? lng) {
+    Map<String, dynamic>? loc(double? lat, double? lng) {
       if (lat == null || lng == null) return null;
       return {'latitude': lat, 'longitude': lng};
     }
@@ -60,8 +60,8 @@ class AttendanceDay {
       'status': status,
       'clockInAt': clockInAt,
       'clockOutAt': clockOutAt,
-      'clockInLoc': _loc(clockInLat, clockInLng),
-      'clockOutLoc': _loc(clockOutLat, clockOutLng),
+      'clockInLoc': loc(clockInLat, clockInLng),
+      'clockOutLoc': loc(clockOutLat, clockOutLng),
       'lateReason': lateReason,
       'updatedAt': FieldValue.serverTimestamp(),
     };

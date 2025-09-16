@@ -7,16 +7,13 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
-    <!-- Notifications (Android 13+). Optional until you add FCM -->
+    <!-- Notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Camera / Media -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <!-- If targetSdk >= 33, prefer READ_MEDIA_IMAGES over READ_EXTERNAL_STORAGE -->
+    <!-- Android 13+ media permission (preferred over READ_EXTERNAL_STORAGE) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <!-- If you still support older devices and need broad storage access, uncomment:
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    -->
 
     <uses-feature
         android:name="android.hardware.camera"
@@ -27,9 +24,9 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-        <!-- ✅ Google Maps API key via Gradle placeholder -->
+        <!-- ✅ Google Maps API key (placeholder; value comes from build.gradle.kts) -->
         <meta-data
-            android:name="com.google.android.maps.v2.API_KEY"
+            android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
 
         <activity
@@ -52,13 +49,13 @@
             </intent-filter>
         </activity>
 
-        <!-- ✅ Required by Flutter tooling -->
+        <!-- Required by Flutter tooling -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
 
-    <!-- Package visibility query (Flutter text processing plugin) -->
+    <!-- Package visibility query (for text processing plugin) -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />

@@ -1,29 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:students_reminder/src/core/colors.dart';
+import 'package:students_reminder/src/core/typography.dart';
 
 ThemeData buildTheme() {
-  final primaryScheme = ColorScheme.fromSeed(seedColor: Color(0xFF9e35e0));
-  final base = ThemeData(
-    useMaterial3: true,
+  final colorScheme = ColorScheme.fromSeed(
+    seedColor: AppColors.primary,
     brightness: Brightness.light,
-    colorSchemeSeed: Color(0xFF9e35e0),
   );
 
-  return base.copyWith(
-        
+  return ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.light,
+    colorScheme: colorScheme,
+    textTheme: AppTypography.textTheme,
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: primaryScheme.surfaceVariant.withOpacity(0.5),
+      fillColor: colorScheme.surface.withAlpha(5),
       floatingLabelBehavior: FloatingLabelBehavior.auto,
-      prefixIconColor: primaryScheme.primary,
-      prefixStyle: TextStyle(color: primaryScheme.primary),
-
+      prefixIconColor: colorScheme.primary,
+      prefixStyle: TextStyle(color: colorScheme.primary),
       floatingLabelStyle: TextStyle(
-        color: primaryScheme.primary,
+        color: colorScheme.primary,
         fontWeight: FontWeight.w600,
       ),
-      border: OutlineInputBorder(),
+      border: const OutlineInputBorder(),
+    ),
+    navigationBarTheme: const NavigationBarThemeData(
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+    ),
+  );
+}
+
+ThemeData buildDarkTheme() {
+  final colorScheme = ColorScheme.fromSeed(
+    seedColor: AppColors.primary,
+    brightness: Brightness.dark,
+  );
+
+  return ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: colorScheme,
+    textTheme: AppTypography.textTheme.apply(bodyColor: AppColors.white),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: colorScheme.surface.withOpacity(0.05),
+      floatingLabelBehavior: FloatingLabelBehavior.auto,
+      prefixIconColor: colorScheme.primary,
+      prefixStyle: TextStyle(color: colorScheme.primary),
+      floatingLabelStyle: TextStyle(
+        color: colorScheme.primary,
+        fontWeight: FontWeight.w600,
       ),
-    navigationBarTheme: NavigationBarThemeData(
+      border: const OutlineInputBorder(),
+    ),
+    navigationBarTheme: const NavigationBarThemeData(
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
     ),
   );
