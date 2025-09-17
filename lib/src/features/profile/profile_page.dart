@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:students_reminder/src/features/auth/login_page.dart';
@@ -27,6 +25,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _onLogout(BuildContext context) async {
     // Capture navigator & messenger BEFORE any await to avoid context-after-await lint
     final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
 
     try {
       final bool? safeToLogout = await showDialog<bool>(
@@ -58,7 +57,7 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text('Logout failed: $e')),
       );
     }
@@ -98,9 +97,11 @@ class _ProfilePageState extends State<ProfilePage> {
     if (file == null) return;
 
     final uid = AuthService.instance.currentUser!.uid;
+    final bytes = await file.readAsBytes();
     await UserService.instance.uploadProfilePhoto(
       uid: uid,
-      file: File(file.path),
+      bytes: bytes,
+      fileName: file.name,
     );
   }
 
@@ -191,9 +192,10 @@ class _ProfilePageState extends State<ProfilePage> {
           TextButton(
             onPressed: () async {
               // optional quick logout (kept simple)
+              final navigator = Navigator.of(context);
               await AuthService.instance.logout();
               if (!mounted) return;
-              Navigator.of(context).pushAndRemoveUntil(
+              navigator.pushAndRemoveUntil(
                 MaterialPageRoute(builder: (_) => const LoginPage()),
                 (route) => false,
               );

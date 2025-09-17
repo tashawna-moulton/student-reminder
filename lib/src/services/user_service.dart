@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -39,21 +39,55 @@ class UserService {
     if (phone != null) data['phone'] = phone;
     if (bio != null) data['bio'] = bio;
     if (data.isNotEmpty) {
-      await _db.collection('users').doc(uid).update(data);
+      await _db
+          .collection('users')
+          .doc(uid)
+          .set(data, SetOptions(merge: true));
     }
   }
 
   Future<String?> uploadProfilePhoto({
     required String uid,
-    required File file,
+    required Uint8List bytes,
+    String? fileName,
   }) async {
-    //Ensure that permissions are handled in the UI before calling this function
-    final ref = _storage.ref().child(
-      'avatars/$uid/${DateTime.now().millisecondsSinceEpoch}.jpg',
-    );
-    await ref.putFile(file);
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final extension = _resolveExtension(fileName);
+    final ref = _storage.ref().child('avatars/$uid/$timestamp$extension');
+
+    // Upload the raw bytes so this works on every platform (web/mobile/desktop)
+    await ref.putData(bytes, SettableMetadata(contentType: _contentType(extension)));
+
     final url = await ref.getDownloadURL();
-    await _db.collection('users').doc(uid).update({'photoUrl': url});
+    await _db
+        .collection('users')
+        .doc(uid)
+        .set({'photoUrl': url}, SetOptions(merge: true));
     return url;
+  }
+
+  String _resolveExtension(String? fileName) {
+    if (fileName != null) {
+      final dotIndex = fileName.lastIndexOf('.');
+      if (dotIndex != -1 && dotIndex < fileName.length - 1) {
+        return fileName.substring(dotIndex).toLowerCase();
+      }
+    }
+    return '.jpg';
+  }
+
+  String _contentType(String extension) {
+    switch (extension) {
+      case '.png':
+        return 'image/png';
+      case '.gif':
+        return 'image/gif';
+      case '.webp':
+        return 'image/webp';
+      case '.jpeg':
+      case '.jpg':
+      default:
+        return 'image/jpeg';
+    }
   }
 }

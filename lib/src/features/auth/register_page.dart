@@ -20,6 +20,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _register() async {
     setState(() => _busy = true);
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     try {
       await AuthService.instance.register(
         firstName: _first.text.trim(),
@@ -29,11 +31,13 @@ class _RegisterPageState extends State<RegisterPage> {
         phone: _phone.text.trim(),
         password: _password.text,
       );
-      if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.main);
+      if (!mounted) return;
+      navigator.pushReplacementNamed(AppRoutes.main);
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Registration failed : $e')));
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Registration failed : $e')),
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }

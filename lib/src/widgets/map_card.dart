@@ -1,12 +1,36 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-//import 'package:permission_handler/permission_handler.dart';
-//import 'package:students_reminder/src/services/auth_service.dart';
 
+import 'full_map_screen.dart'; // 👈 full screen map
+
+/// Map loading states
+enum MapLoadState { loading, ready, error }
+
+/// Wrapper for map status
+class MapStatus {
+  const MapStatus._(this.state, {this.position, this.error});
+
+  const MapStatus.loading() : this._(MapLoadState.loading);
+  const MapStatus.ready(Position position)
+    : this._(MapLoadState.ready, position: position);
+  const MapStatus.error(String message)
+    : this._(MapLoadState.error, error: message);
+
+  final MapLoadState state;
+  final Position? position;
+  final String? error;
+}
+
+/// MapCard widget: shows a Google Map with user’s current location.
+/// Acts like a preview card — tapping it opens the full screen map.
 class MapCard extends StatefulWidget {
-  const MapCard({super.key});
+  const MapCard({super.key, this.onStatusChanged});
+
+  final ValueChanged<MapStatus>? onStatusChanged;
 
   @override
   State<MapCard> createState() => _MapCardState();
@@ -19,27 +43,36 @@ class _MapCardState extends State<MapCard> with WidgetsBindingObserver {
   String? _errorMessage;
   Set<Marker> _markers = {};
 
-  // Map styling
+  /// Default fallback (if no GPS available)
   static const CameraPosition _defaultPosition = CameraPosition(
-    target: LatLng(18.0179, -76.8099), // Jamaica coordinates as fallback
+    target: LatLng(18.0179, -76.8099), // Kingston, JA
     zoom: 15.0,
   );
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      // Re-init map and location when user comes back
-      _initializeLocation();
-    }
-  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    _emitStatus(const MapStatus.loading());
     _initializeLocation();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _initializeLocation();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  /// Initialize location + permissions
   Future<void> _initializeLocation() async {
     try {
       setState(() {
@@ -47,22 +80,22 @@ class _MapCardState extends State<MapCard> with WidgetsBindingObserver {
         _errorMessage = null;
       });
 
-      // Check and request location permissions
       final hasPermission = await _requestLocationPermission();
       if (!hasPermission) {
         setState(() {
-          _errorMessage =
-              'Location permission is required for attendance tracking';
+          _errorMessage = 'Location permission is required.';
           _isLoading = false;
         });
+        _emitStatus(const MapStatus.error('Permission denied'));
         return;
       }
 
-      // Get current position
       final position = await _getCurrentLocation();
       if (position != null) {
         setState(() {
           _currentPosition = position;
+
+          // Add marker for current location
           _markers = {
             Marker(
               markerId: const MarkerId('current_location'),
@@ -78,23 +111,29 @@ class _MapCardState extends State<MapCard> with WidgetsBindingObserver {
           };
         });
 
-        // Move camera to current location
+        _emitStatus(MapStatus.ready(position));
+
         if (_mapController != null) {
           _mapController!.animateCamera(
-            CameraUpdate.newLatLng(
+            CameraUpdate.newLatLngZoom(
               LatLng(position.latitude, position.longitude),
+              15,
             ),
           );
         }
+      } else {
+        setState(() {
+          _errorMessage = 'Unable to determine location';
+        });
+        _emitStatus(const MapStatus.error('Unable to determine location'));
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to get location: ${e.toString()}';
+        _errorMessage = 'Failed to get location: $e';
       });
+      _emitStatus(MapStatus.error(e.toString()));
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -102,33 +141,26 @@ class _MapCardState extends State<MapCard> with WidgetsBindingObserver {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // Check if location services are enabled
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
+      _emitStatus(const MapStatus.error('Location services disabled'));
       setState(() {
-        _errorMessage =
-            'Location services are disabled. Please enable location services.';
+        _errorMessage = 'Enable location services in settings.';
       });
       return false;
     }
 
-    // Check location permission
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        setState(() {
-          _errorMessage = 'Location permission denied';
-        });
-        return false;
-      }
+      if (permission == LocationPermission.denied) return false;
     }
 
     if (permission == LocationPermission.deniedForever) {
       setState(() {
-        _errorMessage =
-            'Location permissions are permanently denied. Please enable them in settings.';
+        _errorMessage = 'Permissions permanently denied.';
       });
+      _emitStatus(const MapStatus.error('Permission permanently denied'));
       return false;
     }
 
@@ -138,9 +170,9 @@ class _MapCardState extends State<MapCard> with WidgetsBindingObserver {
   Future<Position?> _getCurrentLocation() async {
     try {
       return await Geolocator.getCurrentPosition(
-        locationSettings: LocationSettings(
+        locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
-          timeLimit: const Duration(seconds: 10),
+          timeLimit: Duration(seconds: 10),
         ),
       );
     } catch (e) {
@@ -152,238 +184,71 @@ class _MapCardState extends State<MapCard> with WidgetsBindingObserver {
   void _onMapCreated(GoogleMapController controller) {
     _mapController = controller;
     if (_currentPosition != null) {
-      controller.animateCamera(
-        CameraUpdate.newLatLng(
+      controller.moveCamera(
+        CameraUpdate.newLatLngZoom(
           LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+          15,
         ),
       );
     }
   }
 
-  Future<void> _onMyLocationPressed() async {
-    if (_currentPosition != null && _mapController != null) {
-      await _mapController!.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: LatLng(
-              _currentPosition!.latitude,
-              _currentPosition!.longitude,
-            ),
-            zoom: 17.0,
-          ),
-        ),
-      );
-    } else {
-      // Refresh location
-      await _initializeLocation();
-    }
+  void _emitStatus(MapStatus status) {
+    widget.onStatusChanged?.call(status);
   }
-
-  Widget _buildLocationStatus() {
-    if (_isLoading) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        margin: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.blue.withAlpha(1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.blue.withAlpha(3)),
-        ),
-        child: const Row(
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            SizedBox(width: 12),
-            Text('Getting your location...'),
-          ],
-        ),
-      );
-    }
-
-    if (_errorMessage != null) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        margin: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.red.withAlpha(1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.red.withAlpha(3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.error, color: Colors.red, size: 20),
-                const SizedBox(width: 8),
-                const Text(
-                  'Location Error',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(_errorMessage!),
-            const SizedBox(height: 8),
-            ElevatedButton.icon(
-              onPressed: _initializeLocation,
-              icon: const Icon(Icons.refresh, size: 16),
-              label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_currentPosition != null) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        margin: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.green.withAlpha(1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.green.withAlpha(3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.location_on, color: Colors.green, size: 20),
-                const SizedBox(width: 8),
-                const Text(
-                  'Location Found',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Lat: ${_currentPosition!.latitude.toStringAsFixed(6)}\n'
-              'Lng: ${_currentPosition!.longitude.toStringAsFixed(6)}',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-                fontFamily: 'monospace',
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return const SizedBox.shrink();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Location Status Card
-        _buildLocationStatus(),
-
-        // Map
-        Expanded(
-          child: _isLoading
-              ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 16),
-                      Text('Loading map...'),
-                    ],
+@override
+Widget build(BuildContext context) {
+  return Stack(
+    children: [
+      // 👇 Map background
+      Positioned.fill(
+        child: GoogleMap(
+          onMapCreated: _onMapCreated,
+          initialCameraPosition: _currentPosition != null
+              ? CameraPosition(
+                  target: LatLng(
+                    _currentPosition!.latitude,
+                    _currentPosition!.longitude,
                   ),
+                  zoom: 15.0,
                 )
-              : Stack(
-                  children: [
-                    //The Map
-                    GoogleMap(
-                      onMapCreated: _onMapCreated,
-                      initialCameraPosition: _currentPosition != null
-                          ? CameraPosition(
-                              target: LatLng(
-                                _currentPosition!.latitude,
-                                _currentPosition!.longitude,
-                              ),
-                              zoom: 15.0,
-                            )
-                          : _defaultPosition,
-                      markers: _markers,
-                      myLocationEnabled: true,
-                      myLocationButtonEnabled:
-                          false, // We'll use our custom button
-                      zoomControlsEnabled: true,
-                      compassEnabled: true,
-                      mapToolbarEnabled: true,
-                      buildingsEnabled: true,
-                      trafficEnabled: false,
-                    ),
-                    Positioned(
-                      left: 17,
-                      bottom: 17,
-                      child: FloatingActionButton(
-                        onPressed: _onMyLocationPressed,
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.blueGrey,
-                        child: const Icon(Icons.my_location),
-                      ),
-                    ),
-                  ],
-                ),
+              : _defaultPosition,
+          markers: _markers,
+          myLocationEnabled: true,
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          compassEnabled: false,
+          liteModeEnabled: true, // preview only
         ),
+      ),
 
-        // Today's Status (placeholder for future milestones)
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey.withAlpha(1),
-            border: Border(top: BorderSide(color: Colors.grey.withAlpha(3))),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Today\'s Status',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withAlpha(2),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Text(
-                      'Not clocked in',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+      // 👇 Transparent clickable layer on top of map
+      Positioned.fill(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const FullMapScreen()),
+              );
+            },
           ),
         ),
-      ],
-    );
-  }
+      ),
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _mapController?.dispose();
-    super.dispose();
-  }
+      // 👇 Loading indicator
+      if (_isLoading)
+        const Center(child: CircularProgressIndicator()),
+
+      // 👇 Error overlay
+      if (_errorMessage != null && !_isLoading)
+        Center(
+          child: Text(
+            _errorMessage!,
+            style: const TextStyle(color: Colors.red),
+          ),
+        ),
+    ],
+  );
+}
 }

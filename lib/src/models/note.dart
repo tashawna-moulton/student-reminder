@@ -4,7 +4,7 @@ class Note {
   final String body;
   final String visibility; // 'public' | 'private'
   final DateTime? dueDate;
-  final DateTime? aud_dt;
+  final DateTime? audDt;
 
   Note({
     required this.id,
@@ -12,7 +12,7 @@ class Note {
     required this.body,
     required this.visibility,
     this.dueDate,
-    this.aud_dt,
+    this.audDt,
   });
 
   // From Firebase
@@ -26,7 +26,7 @@ class Note {
       body: data['body'] ?? '',
       visibility: data['visibility'] ?? '',
       dueDate: (data['dueDate']?.toDate()) as DateTime?,
-      aud_dt: (data['aud_dt']?.toDate()) as DateTime?,
+      audDt: (data['aud_dt']?.toDate()) as DateTime?,
     );
   }
 
@@ -35,6 +35,6 @@ class Note {
     'body': body,
     'visibility': visibility,
     'dueDate': dueDate,
-    'aud_dt': aud_dt,
+    'aud_dt': audDt,
   };
 }

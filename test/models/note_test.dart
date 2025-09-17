@@ -9,7 +9,7 @@ void main() {
       body: 'B',
       visibility: 'private',
       dueDate: DateTime(2024, 1, 1),
-      aud_dt: DateTime(2024, 1, 2),
+      audDt: DateTime(2024, 1, 2),
     );
 
     final map = note.toMap();
@@ -32,7 +32,6 @@ void main() {
     expect(note.body, 'World');
     expect(note.visibility, 'public');
     expect(note.dueDate, isNull);
-    expect(note.aud_dt, isNull);
+    expect(note.audDt, isNull);
   });
 }
-

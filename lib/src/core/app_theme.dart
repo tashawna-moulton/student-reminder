@@ -44,7 +44,7 @@ ThemeData buildDarkTheme() {
     textTheme: AppTypography.textTheme.apply(bodyColor: AppColors.white),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: colorScheme.surface.withOpacity(0.05),
+      fillColor: colorScheme.surface.withValues(alpha: 0.05),
       floatingLabelBehavior: FloatingLabelBehavior.auto,
       prefixIconColor: colorScheme.primary,
       prefixStyle: TextStyle(color: colorScheme.primary),
