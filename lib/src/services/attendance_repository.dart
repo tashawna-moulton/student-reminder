@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:students_reminder/src/services/auth_service.dart';
 
 class AttendanceDay {
   AttendanceDay({
@@ -108,6 +109,7 @@ class AttendanceRepository {
       if (lateReason != null) 'lateReason': lateReason,
       'updatedAt': FieldValue.serverTimestamp(),
       'createdAt': FieldValue.serverTimestamp(),
+      "userId" : AuthService.instance.currentUser!.uid,
     }, SetOptions(merge: true));
   }
 

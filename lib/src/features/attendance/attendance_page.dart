@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
+import 'package:students_reminder/src/features/attendance/attendance_history.dart';
 //import 'package:geolocator/geolocator.dart';
 
 import '../../services/attendance_repository.dart';
@@ -14,12 +15,10 @@ import '../../widgets/map_card.dart';
 import '../../widgets/late_reason_dialog.dart';
 
 const _cardRadius = 20.0;
-const bool _bypassTimeWindowForTesting =
-    false; 
-    // TODO: revert when time gating is reinstated
-const bool _skipAutoClockOutForTesting =
-    false; 
-    // TODO: revert when auto clock-out is reinstated
+const bool _bypassTimeWindowForTesting = false;
+// TODO: revert when time gating is reinstated
+const bool _skipAutoClockOutForTesting = false;
+// TODO: revert when auto clock-out is reinstated
 
 enum _SnackKind { success, warning, error }
 
@@ -48,7 +47,7 @@ class _AttendancePageState extends State<AttendancePage>
   bool _autoClocking = false;
   MapStatus _mapStatus = const MapStatus.loading();
 
-@override
+  @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
@@ -357,77 +356,80 @@ class _AttendancePageState extends State<AttendancePage>
       });
     }
   }
-Widget _buildLocationPill() {
-  String text;       // Message inside the pill
-  Color pillColor;   // Background color of the pill
-  Color textColor;   // Text + border color
-  String emoji;      // Emoji icon depending on state
 
-  // Decide look based on map status
-  switch (_mapStatus.state) {
-    case MapLoadState.ready:
-      // If map is ready, show coordinates if available
-      final pos = _mapStatus.position;
-      final coords = pos != null
-          ? 'Lat ${pos.latitude.toStringAsFixed(4)}, Lng ${pos.longitude.toStringAsFixed(4)}'
-          : 'Location ready';
+  Widget _buildLocationPill() {
+    String text; // Message inside the pill
+    Color pillColor; // Background color of the pill
+    Color textColor; // Text + border color
+    String emoji; // Emoji icon depending on state
 
-      text = coords;
-      pillColor = Colors.green.shade50;   // light green background
-      textColor = Colors.green.shade700;  // dark green text
-      emoji = "📍";                        // pin emoji
-      break;
+    // Decide look based on map status
+    switch (_mapStatus.state) {
+      case MapLoadState.ready:
+        // If map is ready, show coordinates if available
+        final pos = _mapStatus.position;
+        final coords = pos != null
+            ? 'Lat ${pos.latitude.toStringAsFixed(4)}, Lng ${pos.longitude.toStringAsFixed(4)}'
+            : 'Location ready';
 
-    case MapLoadState.error:
-      // If error, show error message
-      text = 'Location error: ${_mapStatus.error ?? "Unknown"}';
-      pillColor = Colors.red.shade50;    // light red background
-      textColor = Colors.red.shade700;   // dark red text
-      emoji = "❌";                       // cross emoji
-      break;
+        text = coords;
+        pillColor = Colors.green.shade50; // light green background
+        textColor = Colors.green.shade700; // dark green text
+        emoji = "📍"; // pin emoji
+        break;
 
-    case MapLoadState.loading:
-    default:
-      // While loading, show waiting message
-      text = 'Detecting location…';
-      pillColor = Colors.grey.shade200;  // light gray background
-      textColor = Colors.grey.shade600;  // medium gray text
-      emoji = "⏳";                       // hourglass emoji
-      break;
-  }
+      case MapLoadState.error:
+        // If error, show error message
+        text = 'Location error: ${_mapStatus.error ?? "Unknown"}';
+        pillColor = Colors.red.shade50; // light red background
+        textColor = Colors.red.shade700; // dark red text
+        emoji = "❌"; // cross emoji
+        break;
 
-  // Build the styled pill UI
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    decoration: BoxDecoration(
-      color: pillColor,                              // background color
-      borderRadius: BorderRadius.circular(30),       // rounded pill shape
-      border: Border.all(                           // thin border
-        color: textColor.withOpacity(0.4),
-        width: 1.2,
+      case MapLoadState.loading:
+      default:
+        // While loading, show waiting message
+        text = 'Detecting location…';
+        pillColor = Colors.grey.shade200; // light gray background
+        textColor = Colors.grey.shade600; // medium gray text
+        emoji = "⏳"; // hourglass emoji
+        break;
+    }
+
+    // Build the styled pill UI
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: pillColor, // background color
+        borderRadius: BorderRadius.circular(30), // rounded pill shape
+        border: Border.all(
+          // thin border
+          color: textColor.withOpacity(0.4),
+          width: 1.2,
+        ),
       ),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Emoji on the left
-        Text(emoji, style: const TextStyle(fontSize: 20)),
-        const SizedBox(width: 8),
-        // Status text (wraps if too long)
-        Flexible(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: textColor,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Emoji on the left
+          Text(emoji, style: const TextStyle(fontSize: 20)),
+          const SizedBox(width: 8),
+          // Status text (wraps if too long)
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
+
   Widget _buildStatusSummaryPill() {
     final color = _statusColor(_today?.status);
     final icon = _statusIcon(_today?.status);
@@ -519,53 +521,53 @@ Widget _buildLocationPill() {
     _performClockOut(auto: true).whenComplete(() => _autoClocking = false);
   }
 
- // ✅ ClockIn + ClockOut
-Future<void> _handleClockIn() async {
-  final now = DateTime.now();
+  // ✅ ClockIn + ClockOut
+  Future<void> _handleClockIn() async {
+    final now = DateTime.now();
 
-  // Enforce clock-in time window: 8:00 AM – 4:00 PM
-  if (!_bypassTimeWindowForTesting && (now.hour < 8 || now.hour >= 16)) {
-    _showSnack(
-      '⚠️ Clock in only allowed between 8:00–16:00',
-      _SnackKind.warning,
+    // Enforce clock-in time window: 8:00 AM – 4:00 PM
+    if (!_bypassTimeWindowForTesting && (now.hour < 8 || now.hour >= 16)) {
+      _showSnack(
+        '⚠️ Clock in only allowed between 8:00–16:00',
+        _SnackKind.warning,
+      );
+      return;
+    }
+
+    final hasPerm = await _loc.ensurePermission();
+    if (!hasPerm) {
+      _showSnack('⚠️ Location permission required', _SnackKind.warning);
+      return;
+    }
+
+    final pos = await _loc.getCurrentPosition();
+
+    // Define cutoffs
+    final start = DateTime(now.year, now.month, now.day, 8, 0); // 8:00 AM
+    final cutoff = DateTime(now.year, now.month, now.day, 8, 30); // 8:30 AM
+
+    String status;
+    String? lateReason;
+
+    if (now.isBefore(start)) {
+      status = 'early'; // before 8:00
+    } else if (now.isBefore(cutoff)) {
+      status = 'present'; // between 8:00 and 8:29
+    } else {
+      status = 'late'; // 8:30 or later
+      lateReason = await showLateReasonDialog(context);
+      if (lateReason == null || lateReason.trim().isEmpty) return;
+    }
+
+    await _repo.clockIn(
+      lat: pos.latitude,
+      lng: pos.longitude,
+      status: status,
+      lateReason: lateReason,
     );
-    return;
+
+    _showSnack('✅ Clocked in (${status.toUpperCase()})', _SnackKind.success);
   }
-
-  final hasPerm = await _loc.ensurePermission();
-  if (!hasPerm) {
-    _showSnack('⚠️ Location permission required', _SnackKind.warning);
-    return;
-  }
-
-  final pos = await _loc.getCurrentPosition();
-
-  // Define cutoffs
-  final start = DateTime(now.year, now.month, now.day, 8, 0);   // 8:00 AM
-  final cutoff = DateTime(now.year, now.month, now.day, 8, 30); // 8:30 AM
-
-  String status;
-  String? lateReason;
-
-  if (now.isBefore(start)) {
-    status = 'early'; // before 8:00
-  } else if (now.isBefore(cutoff)) {
-    status = 'present'; // between 8:00 and 8:29
-  } else {
-    status = 'late'; // 8:30 or later
-    lateReason = await showLateReasonDialog(context);
-    if (lateReason == null || lateReason.trim().isEmpty) return;
-  }
-
-  await _repo.clockIn(
-    lat: pos.latitude,
-    lng: pos.longitude,
-    status: status,
-    lateReason: lateReason,
-  );
-
-  _showSnack('✅ Clocked in (${status.toUpperCase()})', _SnackKind.success);
-}
 
   Future<void> _handleClockOut() async {
     await _performClockOut(auto: false);
@@ -578,11 +580,12 @@ Future<void> _handleClockIn() async {
 
     final hasPerm = await _loc.ensurePermission();
     if (!hasPerm) {
-      if (!auto)
+      if (!auto) {
         _showSnack(
           '⚠️ Location permission required to clock out.',
           _SnackKind.warning,
         );
+      }
       return;
     }
 
@@ -759,78 +762,91 @@ Future<void> _handleClockIn() async {
       }).toList(),
     );
   }
-Widget _buildWeeklyStreaks() {
-  // Find start of this week (Monday)
-  final now = DateTime.now();
-  final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
 
-  // Generate Mon–Fri dates
-  final weekDays = List.generate(5, (i) {
-    final date = startOfWeek.add(Duration(days: i));
-    final dateId = DateFormat('yyyy-MM-dd').format(date);
+  Widget _buildWeeklyStreaks() {
+    // Find start of this week (Monday)
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
 
-    // Match with attendance records
-    final match = _recentDays.firstWhere(
-      (d) => d.dateId == dateId,
-      orElse: () => AttendanceDay(id: dateId, dateId: dateId, status: null),
-    );
+    // Generate Mon–Fri dates
+    final weekDays = List.generate(5, (i) {
+      final date = startOfWeek.add(Duration(days: i));
+      final dateId = DateFormat('yyyy-MM-dd').format(date);
 
-    String emoji;
-    switch (match.status) {
-      case 'early':
-        emoji = '✅'; // on time
-        break;
-      case 'late':
-        emoji = '⏰'; // late
-        break;
-      case 'absent':
-        emoji = '🚫'; // absent
-        break;
-      default:
-        emoji = '⚪'; // no record
-    }
+      // Match with attendance records
+      final match = _recentDays.firstWhere(
+        (d) => d.dateId == dateId,
+        orElse: () => AttendanceDay(id: dateId, dateId: dateId, status: null),
+      );
 
-    return {
-      'label': DateFormat('E').format(date), // Mon, Tue, ...
-      'emoji': emoji,
-    };
-  });
+      String emoji;
+      switch (match.status) {
+        case 'early':
+          emoji = '✅'; // on time
+          break;
+        case 'late':
+          emoji = '⏰'; // late
+          break;
+        case 'absent':
+          emoji = '🚫'; // absent
+          break;
+        default:
+          emoji = '⚪'; // no record
+      }
 
-  return Card(
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(_cardRadius),
-    ),
-    elevation: 4,
-    margin: EdgeInsets.zero,
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: weekDays.map((day) {
-          return Column(
-            children: [
-              Text(
-                day['label']!,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                day['emoji']!,
-                style: const TextStyle(fontSize: 22),
-              ),
-            ],
-          );
-        }).toList(),
+      return {
+        'label': DateFormat('E').format(date), // Mon, Tue, ...
+        'emoji': emoji,
+      };
+    });
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(_cardRadius),
       ),
-    ),
-  );
-}
-
+      elevation: 4,
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: weekDays.map((day) {
+            return Column(
+              children: [
+                Text(
+                  day['label']!,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(day['emoji']!, style: const TextStyle(fontSize: 22)),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Attendance')),
+      appBar: AppBar(
+        title: const Text('Attendance'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AttendanceHistory()),
+              );
+            },
+            icon: Icon(Icons.refresh_outlined),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: CustomScrollView(
           slivers: [

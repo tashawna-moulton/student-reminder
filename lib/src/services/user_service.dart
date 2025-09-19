@@ -76,6 +76,20 @@ class UserService {
     return '.jpg';
   }
 
+  Stream<QuerySnapshot<Map<String,dynamic>>> adminDoc(){
+    try{
+    return FirebaseFirestore.instance
+      .collectionGroup("attendance")
+            .orderBy("date")
+            .snapshots();
+    }catch(e,st){
+    debugPrint("❌ Error loading adminDoc: $e\n$st");
+      return const Stream.empty();
+      
+      }
+
+  }
+
   String _contentType(String extension) {
     switch (extension) {
       case '.png':

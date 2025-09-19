@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -25,12 +23,16 @@ class MapStatus {
   final String? error;
 }
 
-/// MapCard widget: shows a Google Map with user’s current location.
-/// Acts like a preview card — tapping it opens the full screen map.
+/// ✅ MapCard widget
+/// - If `fixedPosition` is provided → shows that location (admin/student detail view)
+/// - Otherwise → shows live location of the user (student view)
 class MapCard extends StatefulWidget {
-  const MapCard({super.key, this.onStatusChanged});
-
   final ValueChanged<MapStatus>? onStatusChanged;
+
+  /// 👇 If provided, shows this fixed location
+  final LatLng? fixedPosition;
+
+  const MapCard({super.key, this.onStatusChanged, this.fixedPosition});
 
   @override
   State<MapCard> createState() => _MapCardState();
@@ -43,9 +45,9 @@ class _MapCardState extends State<MapCard> with WidgetsBindingObserver {
   String? _errorMessage;
   Set<Marker> _markers = {};
 
-  /// Default fallback (if no GPS available)
+  /// Default fallback (Kingston, JA)
   static const CameraPosition _defaultPosition = CameraPosition(
-    target: LatLng(18.0179, -76.8099), // Kingston, JA
+    target: LatLng(18.0179, -76.8099),
     zoom: 15.0,
   );
 
@@ -55,12 +57,31 @@ class _MapCardState extends State<MapCard> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
 
     _emitStatus(const MapStatus.loading());
-    _initializeLocation();
+
+    if (widget.fixedPosition != null) {
+      // 👨‍🏫 Admin/student detail: show saved location
+      _setFixedMarker(widget.fixedPosition!);
+      _isLoading = false;
+    } else {
+      // 👩‍🎓 Student: get live location
+      _initializeLocation();
+    }
+  }
+
+  void _setFixedMarker(LatLng pos) {
+    _markers = {
+      Marker(
+        markerId: const MarkerId('fixed_location'),
+        position: pos,
+        infoWindow: const InfoWindow(title: 'Attendance Location'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+      ),
+    };
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed && widget.fixedPosition == null) {
       _initializeLocation();
     }
   }
@@ -72,7 +93,7 @@ class _MapCardState extends State<MapCard> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  /// Initialize location + permissions
+  /// Initialize live location (student case)
   Future<void> _initializeLocation() async {
     try {
       setState(() {
@@ -90,43 +111,28 @@ class _MapCardState extends State<MapCard> with WidgetsBindingObserver {
         return;
       }
 
-      final position = await _getCurrentLocation();
-      if (position != null) {
-        setState(() {
-          _currentPosition = position;
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
 
-          // Add marker for current location
-          _markers = {
-            Marker(
-              markerId: const MarkerId('current_location'),
-              position: LatLng(position.latitude, position.longitude),
-              infoWindow: const InfoWindow(
-                title: 'My Location',
-                snippet: 'Current position',
-              ),
-              icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueBlue,
-              ),
+      setState(() {
+        _currentPosition = position;
+        _markers = {
+          Marker(
+            markerId: const MarkerId('current_location'),
+            position: LatLng(position.latitude, position.longitude),
+            infoWindow: const InfoWindow(title: 'My Location'),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueBlue,
             ),
-          };
-        });
+          ),
+        };
+      });
 
-        _emitStatus(MapStatus.ready(position));
-
-        if (_mapController != null) {
-          _mapController!.animateCamera(
-            CameraUpdate.newLatLngZoom(
-              LatLng(position.latitude, position.longitude),
-              15,
-            ),
-          );
-        }
-      } else {
-        setState(() {
-          _errorMessage = 'Unable to determine location';
-        });
-        _emitStatus(const MapStatus.error('Unable to determine location'));
-      }
+      _emitStatus(MapStatus.ready(position));
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to get location: $e';
@@ -138,52 +144,26 @@ class _MapCardState extends State<MapCard> with WidgetsBindingObserver {
   }
 
   Future<bool> _requestLocationPermission() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return false;
 
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      _emitStatus(const MapStatus.error('Location services disabled'));
-      setState(() {
-        _errorMessage = 'Enable location services in settings.';
-      });
-      return false;
-    }
-
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) return false;
     }
 
-    if (permission == LocationPermission.deniedForever) {
-      setState(() {
-        _errorMessage = 'Permissions permanently denied.';
-      });
-      _emitStatus(const MapStatus.error('Permission permanently denied'));
-      return false;
-    }
-
+    if (permission == LocationPermission.deniedForever) return false;
     return true;
-  }
-
-  Future<Position?> _getCurrentLocation() async {
-    try {
-      return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
-        ),
-      );
-    } catch (e) {
-      debugPrint('Error getting current location: $e');
-      return null;
-    }
   }
 
   void _onMapCreated(GoogleMapController controller) {
     _mapController = controller;
-    if (_currentPosition != null) {
+    if (widget.fixedPosition != null) {
+      controller.moveCamera(
+        CameraUpdate.newLatLngZoom(widget.fixedPosition!, 15),
+      );
+    } else if (_currentPosition != null) {
       controller.moveCamera(
         CameraUpdate.newLatLngZoom(
           LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
@@ -196,59 +176,59 @@ class _MapCardState extends State<MapCard> with WidgetsBindingObserver {
   void _emitStatus(MapStatus status) {
     widget.onStatusChanged?.call(status);
   }
-@override
-Widget build(BuildContext context) {
-  return Stack(
-    children: [
-      // 👇 Map background
-      Positioned.fill(
-        child: GoogleMap(
-          onMapCreated: _onMapCreated,
-          initialCameraPosition: _currentPosition != null
-              ? CameraPosition(
-                  target: LatLng(
-                    _currentPosition!.latitude,
-                    _currentPosition!.longitude,
-                  ),
-                  zoom: 15.0,
-                )
-              : _defaultPosition,
-          markers: _markers,
-          myLocationEnabled: true,
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled: false,
-          compassEnabled: false,
-          liteModeEnabled: true, // preview only
-        ),
-      ),
 
-      // 👇 Transparent clickable layer on top of map
-      Positioned.fill(
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const FullMapScreen()),
-              );
-            },
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: GoogleMap(
+            onMapCreated: _onMapCreated,
+            initialCameraPosition: widget.fixedPosition != null
+                ? CameraPosition(target: widget.fixedPosition!, zoom: 15)
+                : _currentPosition != null
+                ? CameraPosition(
+                    target: LatLng(
+                      _currentPosition!.latitude,
+                      _currentPosition!.longitude,
+                    ),
+                    zoom: 15.0,
+                  )
+                : _defaultPosition,
+            markers: _markers,
+            myLocationEnabled:
+                widget.fixedPosition == null, // ✅ only student sees blue dot
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            compassEnabled: false,
+            liteModeEnabled: true,
           ),
         ),
-      ),
 
-      // 👇 Loading indicator
-      if (_isLoading)
-        const Center(child: CircularProgressIndicator()),
-
-      // 👇 Error overlay
-      if (_errorMessage != null && !_isLoading)
-        Center(
-          child: Text(
-            _errorMessage!,
-            style: const TextStyle(color: Colors.red),
+        // 👇 Tap → open full screen map
+        Positioned.fill(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const FullMapScreen()),
+                );
+              },
+            ),
           ),
         ),
-    ],
-  );
-}
+
+        if (_isLoading) const Center(child: CircularProgressIndicator()),
+
+        if (_errorMessage != null && !_isLoading)
+          Center(
+            child: Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+      ],
+    );
+  }
 }
